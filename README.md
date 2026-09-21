@@ -1,4 +1,3 @@
-[README.md](https://github.com/user-attachments/files/32450964/README.md)
 # Portfolio Preview
 
 一个速度优先的私密作品集：把图片放进 `portfolio-images/`，启动后输入密码即可查看全屏逐页页面。

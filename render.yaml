@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: zhao-yuxin-portfolio
+    env: node
+    plan: free
+    buildCommand: pnpm install --frozen-lockfile
+    startCommand: pnpm start
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: 24
+      - key: NODE_ENV
+        value: production
+      - key: PASSWORD_ROTATION_DAYS
+        value: 10
+      - key: SITE_EXPIRES_AFTER_DAYS
+        value: 60
+      - key: EMAIL_ENABLED
+        value: false
+      - key: CREATED_AT
+        value: 2026-09-20T13:36:12.074Z
+      - key: PASSWORD_SEED
+        sync: false
+      - key: SESSION_SECRET
+        generateValue: true
