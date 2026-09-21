@@ -84,20 +84,26 @@ h1 {
   width: 100%;
   min-height: 100vh;
   overflow-x: hidden;
+  background: #000;
   scroll-snap-type: y mandatory;
 }
 
 .page {
   width: 100vw;
-  height: 100vh;
+  height: calc(100vh + 4px);
   margin: 0;
-  padding: 0;
+  padding: 0 0 4px;
   display: grid;
   place-items: center;
   overflow: hidden;
-  background: #f4f0ea;
+  background: #000;
   scroll-snap-align: start;
   scroll-snap-stop: always;
+}
+
+.page:last-child {
+  height: 100vh;
+  padding-bottom: 0;
 }
 
 .page img {
