@@ -19,8 +19,8 @@ const localPasswordFile = path.join(dataDir, "current-password.txt");
 const localSessionSecretFile = path.join(dataDir, "session-secret.txt");
 
 const port = Number(process.env.PORT || 3000);
-const rotationDays = Number(process.env.PASSWORD_ROTATION_DAYS || 10);
-const expiresAfterDays = Number(process.env.SITE_EXPIRES_AFTER_DAYS || 60);
+const rotationDays = positiveNumber(process.env.PASSWORD_ROTATION_DAYS, 10);
+const expiresAfterDays = positiveNumber(process.env.SITE_EXPIRES_AFTER_DAYS, 60);
 const deterministicPasswordEnabled = Boolean(process.env.PASSWORD_SEED && process.env.CREATED_AT);
 const imageExtensions = new Set([".jpg", ".jpeg", ".png", ".webp", ".gif", ".avif"]);
 const firstImageName = "1.jpeg";
@@ -66,6 +66,16 @@ function addDays(date, days) {
   return new Date(date.getTime() + days * 24 * 60 * 60 * 1000);
 }
 
+function positiveNumber(value, fallback) {
+  const number = Number(value);
+  return Number.isFinite(number) && number > 0 ? number : fallback;
+}
+
+function validDate(value, fallback = new Date()) {
+  const date = new Date(value);
+  return Number.isFinite(date.getTime()) ? date : fallback;
+}
+
 function hashPassword(password, salt = crypto.randomBytes(16).toString("hex")) {
   const hash = crypto.scryptSync(password, salt, 64).toString("hex");
   return { salt, hash };
@@ -81,7 +91,7 @@ function generatePassword() {
 }
 
 function passwordPeriod(now = new Date()) {
-  const createdAt = new Date(process.env.CREATED_AT);
+  const createdAt = validDate(process.env.CREATED_AT);
   return Math.max(0, Math.floor((now.getTime() - createdAt.getTime()) / (rotationDays * 24 * 60 * 60 * 1000)));
 }
 
@@ -94,7 +104,7 @@ function deterministicPassword(period = passwordPeriod()) {
 }
 
 function deterministicState(now = new Date()) {
-  const createdAt = new Date(process.env.CREATED_AT);
+  const createdAt = validDate(process.env.CREATED_AT);
   const period = passwordPeriod(now);
   return {
     createdAt: createdAt.toISOString(),
@@ -259,23 +269,27 @@ function getSession(req) {
   }
 }
 
-function isAuthenticated(req, state = readState()) {
+function isAuthenticated(req, state = null) {
   if (!state) return false;
   const session = getSession(req);
   return Boolean(session && session.version === (state.sessionVersion || 1));
 }
 
-function requireAuth(req, res, next) {
-  const state = readState();
-  if (!state || isExpired(state)) {
-    res.status(410).json({ error: "作品集链接已失效" });
-    return;
+async function requireAuth(req, res, next) {
+  try {
+    const state = await ensureState();
+    if (!state || isExpired(state)) {
+      res.status(410).json({ error: "作品集链接已失效" });
+      return;
+    }
+    if (!isAuthenticated(req, state)) {
+      res.status(401).json({ error: "需要访问密码" });
+      return;
+    }
+    next();
+  } catch (error) {
+    next(error);
   }
-  if (!isAuthenticated(req, state)) {
-    res.status(401).json({ error: "需要访问密码" });
-    return;
-  }
-  next();
 }
 
 function listImages() {
